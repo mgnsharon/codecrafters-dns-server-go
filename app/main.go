@@ -47,7 +47,7 @@ func main() {
 				Z: 0,
 				RCode: 0,
 				QDCount: 1,
-				ANCount: 0,
+				ANCount: 1,
 				NSCount: 0,
 				ARCount: 0,
 			},
@@ -69,6 +69,29 @@ func main() {
 					Class: dns.IN,
 				},
 								
+			},
+			Answers: []dns.ResourceRecord{
+				{
+					Name: dns.DomainName{
+						Labels: []dns.DomainLabel{
+							{
+								Length: 12,
+								Content: "codecrafters",
+							},
+							{
+								Length: 2,
+								Content: "io",
+							},
+						},
+					},
+					Type: dns.A,
+					Class: dns.IN,
+					TTL: 60,
+					RData: (*dns.IPv4Address)(&dns.IPv4Address{
+							Octets: [4]uint8{127, 0, 0, 1},
+						}).Bytes(),
+					RDLength: 4,
+				},
 			},
 		}
 			

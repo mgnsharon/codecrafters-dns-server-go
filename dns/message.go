@@ -2,6 +2,7 @@ package dns
 
 import (
 	"encoding/binary"
+	"fmt"
 )
 
 
@@ -56,7 +57,13 @@ type Question struct {
 	Class RecordClass
 }
 
-type Answer struct {
+type ResourceRecord struct {
+	Name DomainName
+	Type RecordType
+	Class RecordClass
+	TTL uint32
+	RDLength uint16
+	RData []byte
 }
 
 type Authority struct {
@@ -68,9 +75,23 @@ type Additional struct {
 type Message struct {
 	Header     Header
 	Questions  []Question
-	Answers    []Answer
+	Answers    []ResourceRecord
 	Authorities []Authority
 	Additionals []Additional
+}
+
+type IPv4Address struct {
+	Octets [4]uint8
+}
+
+func (a *IPv4Address) String() string {
+	return fmt.Sprintf("%d.%d.%d.%d", a.Octets[0], a.Octets[1], a.Octets[2], a.Octets[3])
+}
+
+func (a *IPv4Address) Bytes() []byte {
+	buf := make([]byte, 4)
+	copy(buf, a.Octets[:])
+	return buf
 }
 
 // Bytes returns the 12 byte representation of the DNS header.
@@ -92,6 +113,9 @@ func (m *Message) Bytes() []byte {
 	buf := m.Header.Bytes()
 	for _, question := range m.Questions {
 		buf = append(buf, question.Bytes()...)
+	}
+	for _, answer := range m.Answers {
+		buf = append(buf, answer.Bytes()...)
 	}
 	return buf
 }
@@ -117,5 +141,16 @@ func (q *Question) Bytes() []byte {
 	buf = append(buf, q.Name.Bytes()...)
 	buf = binary.BigEndian.AppendUint16(buf, uint16(q.Type))
 	buf = binary.BigEndian.AppendUint16(buf, uint16(q.Class))
+	return buf
+}
+
+func (r *ResourceRecord) Bytes() []byte {
+	buf := make([]byte, 0)
+	buf = append(buf, r.Name.Bytes()...)
+	buf = binary.BigEndian.AppendUint16(buf, uint16(r.Type))
+	buf = binary.BigEndian.AppendUint16(buf, uint16(r.Class))
+	buf = binary.BigEndian.AppendUint32(buf, r.TTL)
+	buf = binary.BigEndian.AppendUint16(buf, r.RDLength)
+	buf = append(buf, r.RData...)
 	return buf
 }
