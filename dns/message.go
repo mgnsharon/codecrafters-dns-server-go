@@ -4,6 +4,26 @@ import (
 	"encoding/binary"
 )
 
+
+
+type RecordType uint16 
+type RecordClass uint16
+
+const (
+	A     RecordType = 1 // A is a host address.
+	NS    RecordType = 2 // NS is an authoritative name server.
+	CNAME RecordType = 5 // CNAME is the canonical name for an alias.
+	SOA   RecordType = 6 // SOA is the start of a zone of authority.
+	PTR   RecordType = 12 // PTR is a domain name pointer.
+	MX    RecordType = 15 // MX is a mail exchange.
+	TXT   RecordType = 16 // TXT is text strings.
+	AAAA  RecordType = 28 // AAAA is a host address.
+
+	IN RecordClass = 1 // IN is the Internet class.
+	CH RecordClass = 3 // CH is the Chaos class.
+	HS RecordClass = 4 // HS is the Hesiod class.
+)
+
 // Header represents the DNS message header.
 type Header struct {
 	ID      uint16 // ID is the identification number of the DNS message.
@@ -21,7 +41,19 @@ type Header struct {
 	ARCount uint16 // ARCount is the number of resource records in the additional section.
 }
 
+type DomainLabel struct {
+	Length uint8
+	Content  string
+}
+
+type DomainName struct {
+	Labels []DomainLabel
+}
+
 type Question struct {
+	Name DomainName
+	Type RecordType
+	Class RecordClass
 }
 
 type Answer struct {
@@ -41,6 +73,8 @@ type Message struct {
 	Additionals []Additional
 }
 
+// Bytes returns the 12 byte representation of the DNS header.
+// BigEndian is used for encoding.
 func (h *Header) Bytes() []byte {
 	buf := make([]byte, 12)
 	binary.BigEndian.PutUint16(buf[0:2], h.ID)
@@ -56,5 +90,32 @@ func (h *Header) Bytes() []byte {
 
 func (m *Message) Bytes() []byte {
 	buf := m.Header.Bytes()
+	for _, question := range m.Questions {
+		buf = append(buf, question.Bytes()...)
+	}
+	return buf
+}
+
+func (d *DomainLabel) Bytes() []byte {
+	buf := make([]byte, 1 + len(d.Content))
+	buf[0] = d.Length
+	copy(buf[1:], []byte(d.Content))
+	return buf
+}
+
+func (d *DomainName) Bytes() []byte {
+	buf := make([]byte, 0)
+	for _, label := range d.Labels {
+		buf = append(buf, label.Bytes()...)
+	}
+	buf = append(buf, byte(0))
+	return buf
+}
+
+func (q *Question) Bytes() []byte {
+	buf := make([]byte, 0)
+	buf = append(buf, q.Name.Bytes()...)
+	buf = binary.BigEndian.AppendUint16(buf, uint16(q.Type))
+	buf = binary.BigEndian.AppendUint16(buf, uint16(q.Class))
 	return buf
 }

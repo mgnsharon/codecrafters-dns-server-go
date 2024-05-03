@@ -46,10 +46,29 @@ func main() {
 				RA: 0,
 				Z: 0,
 				RCode: 0,
-				QDCount: 0,
+				QDCount: 1,
 				ANCount: 0,
 				NSCount: 0,
 				ARCount: 0,
+			},
+			Questions: []dns.Question{
+				{
+					Name: dns.DomainName{
+						Labels: []dns.DomainLabel{
+							{
+								Length: 12,
+								Content: "codecrafters",
+							},
+							{
+								Length: 2,
+								Content: "io",
+							},
+						},
+					},
+					Type: dns.A,
+					Class: dns.IN,
+				},
+								
 			},
 		}
 			
