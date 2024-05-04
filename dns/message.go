@@ -154,3 +154,85 @@ func (r *ResourceRecord) Bytes() []byte {
 	buf = append(buf, r.RData...)
 	return buf
 }
+
+func HeaderFromBytes(buf []byte) *Header {
+	h := Header{}
+	h.ID = binary.BigEndian.Uint16(buf[0:2])
+	flag := binary.BigEndian.Uint16(buf[2:4])
+	h.QR = uint8(flag >> 15)
+	h.Opcode = uint8((flag >> 11) & 0x0F)
+	h.AA = uint8((flag >> 10) & 0x01)
+	h.TC = uint8((flag >> 9) & 0x01)
+	h.RD = uint8((flag >> 8) & 0x01)
+	h.RA = uint8((flag >> 7) & 0x01)
+	h.Z = uint8((flag >> 4) & 0x07)
+	h.RCode = uint8(flag & 0x0F)
+	h.QDCount = binary.BigEndian.Uint16(buf[4:6])
+	h.ANCount = binary.BigEndian.Uint16(buf[6:8])
+	h.NSCount = binary.BigEndian.Uint16(buf[8:10])
+	h.ARCount = binary.BigEndian.Uint16(buf[10:12])
+	return &h
+}
+
+
+
+func DomainLabelFromBytes(buf []byte) *DomainLabel {
+	d := DomainLabel{}
+	d.Length = buf[0]
+	d.Content = string(buf[1:d.Length + 1])
+	return &d
+}
+
+func DomainNameFromBytes(buf []byte) *DomainName {
+	d := DomainName{}
+	d.Labels = make([]DomainLabel, 0)
+	for {
+		if buf[0] == 0 {
+			break
+		}
+		label := DomainLabelFromBytes(buf)
+		d.Labels = append(d.Labels, *label)
+		buf = buf[label.Length + 1:]
+	}
+	return &d
+}
+
+func QuestionFromBytes(buf []byte) *Question {
+	q := Question{}
+	q.Name = *DomainNameFromBytes(buf)
+	buf = buf[len(q.Name.Bytes())+1:]
+	q.Type = RecordType(binary.BigEndian.Uint16(buf[:2]))
+	q.Class = RecordClass(binary.BigEndian.Uint16(buf[2:4]))
+	return &q
+}
+
+func ResourceRecordFromBytes(buf []byte) *ResourceRecord {
+	r := ResourceRecord{}
+	r.Name = *DomainNameFromBytes(buf)
+	buf = buf[len(r.Name.Bytes())+1:]
+	r.Type = RecordType(binary.BigEndian.Uint16(buf[:2]))
+	r.Class = RecordClass(binary.BigEndian.Uint16(buf[2:4]))
+	r.TTL = binary.BigEndian.Uint32(buf[4:8])
+	r.RDLength = binary.BigEndian.Uint16(buf[8:10])
+	r.RData = buf[10:int(r.RDLength)]
+	return &r
+}
+
+func MessageFromBytes(buf []byte) *Message {
+	m := Message{}
+	m.Header = *HeaderFromBytes(buf)
+	buf = buf[12:]
+	m.Questions = make([]Question, m.Header.QDCount)
+	for i := 0; i < int(m.Header.QDCount); i++ {
+		q := QuestionFromBytes(buf)
+		m.Questions = append(m.Questions, *q)
+		buf = buf[len(q.Bytes()):]
+	}
+	m.Answers = make([]ResourceRecord, m.Header.ANCount)
+	for i := 0; i < int(m.Header.ANCount); i++ {
+		r := ResourceRecordFromBytes(buf)
+		m.Answers = append(m.Answers, *r)
+		buf = buf[len(r.Bytes()):]
+	}
+	return &m
+}
