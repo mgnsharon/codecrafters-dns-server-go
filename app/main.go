@@ -41,6 +41,7 @@ func main() {
 }
 
 func handleRequest(data []byte) []byte {
+	req := dns.MessageFromBytes(data)
 	res := dns.MessageFromBytes(data)
 	
 	fmt.Println("Received request:", res)
@@ -58,19 +59,15 @@ func handleRequest(data []byte) []byte {
 	res.Header.ANCount = 1
 	res.Header.NSCount = 0
 	res.Header.ARCount = 0
+	labels := make([]dns.DomainLabel, 0)
+	for _, label := range req.Questions[0].Name.Labels {
+		labels = append(labels, label)
+	}
+
 	res.Questions = []dns.Question{
 		{
 			Name: dns.DomainName{
-				Labels: []dns.DomainLabel{
-					{
-						Length: 12,
-						Content: "codecrafters",
-					},
-					{
-						Length: 2,
-						Content: "io",
-					},
-				},
+				Labels: labels,
 			},
 			Type: dns.A,
 			Class: dns.IN,
