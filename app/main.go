@@ -42,15 +42,18 @@ func main() {
 
 func handleRequest(data []byte) []byte {
 	req := dns.MessageFromBytes(data)
-	res := dns.MessageFromBytes(data)
+
+	res := dns.Message{}
 	
-	fmt.Println("Received request:", res)
+	res.Header.ID = req.Header.ID
 	res.Header.QR = 1
 	res.Header.AA = 0
 	res.Header.TC = 0
 	res.Header.RA = 0
 	res.Header.Z = 0
-	if res.Header.Opcode == 0 {
+	res.Header.RD = req.Header.RD
+	res.Header.Opcode = req.Header.Opcode
+	if req.Header.Opcode == 0 {
 		res.Header.RCode = 0 
 	} else {
 		res.Header.RCode = 4
@@ -59,40 +62,19 @@ func handleRequest(data []byte) []byte {
 	res.Header.ANCount = 1
 	res.Header.NSCount = 0
 	res.Header.ARCount = 0
-	labels := make([]dns.DomainLabel, 0)
-	for _, label := range req.Questions[0].Name.Labels {
-		labels = append(labels, label)
-	}
 
-	res.Questions = []dns.Question{
-		{
-			Name: dns.DomainName{
-				Labels: labels,
-			},
-			Type: dns.A,
-			Class: dns.IN,
-		},
-						
-	}
+	res.Questions = append(res.Questions, req.Questions[0])
+
 	res.Answers = []dns.ResourceRecord{
 		{
 			Name: dns.DomainName{
-				Labels: []dns.DomainLabel{
-					{
-						Length: 12,
-						Content: "codecrafters",
-					},
-					{
-						Length: 2,
-						Content: "io",
-					},
-				},
+				Labels: append([]dns.DomainLabel{}, req.Questions[0].Name.Labels...),
 			},
 			Type: dns.A,
 			Class: dns.IN,
 			TTL: 60,
 			RData: (*dns.IPv4Address)(&dns.IPv4Address{
-					Octets: [4]uint8{127, 0, 0, 1},
+					Octets: [4]uint8{8, 8, 8, 8},
 				}).Bytes(),
 			RDLength: 4,
 		},

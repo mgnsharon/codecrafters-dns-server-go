@@ -155,7 +155,7 @@ func (r *ResourceRecord) Bytes() []byte {
 	return buf
 }
 
-func HeaderFromBytes(buf []byte) *Header {
+func HeaderFromBytes(buf []byte) Header {
 	h := Header{}
 	h.ID = binary.BigEndian.Uint16(buf[0:2])
 	flag := binary.BigEndian.Uint16(buf[2:4])
@@ -171,19 +171,19 @@ func HeaderFromBytes(buf []byte) *Header {
 	h.ANCount = binary.BigEndian.Uint16(buf[6:8])
 	h.NSCount = binary.BigEndian.Uint16(buf[8:10])
 	h.ARCount = binary.BigEndian.Uint16(buf[10:12])
-	return &h
+	return h
 }
 
 
 
-func DomainLabelFromBytes(buf []byte) *DomainLabel {
+func DomainLabelFromBytes(buf []byte) DomainLabel {
 	d := DomainLabel{}
 	d.Length = buf[0]
 	d.Content = string(buf[1:d.Length + 1])
-	return &d
+	return d
 }
 
-func DomainNameFromBytes(buf []byte) *DomainName {
+func DomainNameFromBytes(buf []byte) DomainName {
 	d := DomainName{}
 	d.Labels = make([]DomainLabel, 0)
 	for {
@@ -191,47 +191,47 @@ func DomainNameFromBytes(buf []byte) *DomainName {
 			break
 		}
 		label := DomainLabelFromBytes(buf)
-		d.Labels = append(d.Labels, *label)
+		d.Labels = append(d.Labels, label)
 		buf = buf[label.Length + 1:]
 	}
-	return &d
+	return d
 }
 
-func QuestionFromBytes(buf []byte) *Question {
+func QuestionFromBytes(buf []byte) Question {
 	q := Question{}
-	q.Name = *DomainNameFromBytes(buf)
-	buf = buf[len(q.Name.Bytes())+1:]
+	q.Name = DomainNameFromBytes(buf)
+	buf = buf[len(q.Name.Bytes()):]
 	q.Type = RecordType(binary.BigEndian.Uint16(buf[:2]))
 	q.Class = RecordClass(binary.BigEndian.Uint16(buf[2:4]))
-	return &q
+	return q
 }
 
-func ResourceRecordFromBytes(buf []byte) *ResourceRecord {
+func ResourceRecordFromBytes(buf []byte) ResourceRecord {
 	r := ResourceRecord{}
-	r.Name = *DomainNameFromBytes(buf)
-	buf = buf[len(r.Name.Bytes())+1:]
+	r.Name = DomainNameFromBytes(buf)
+	buf = buf[len(r.Name.Bytes()):]
 	r.Type = RecordType(binary.BigEndian.Uint16(buf[:2]))
 	r.Class = RecordClass(binary.BigEndian.Uint16(buf[2:4]))
 	r.TTL = binary.BigEndian.Uint32(buf[4:8])
 	r.RDLength = binary.BigEndian.Uint16(buf[8:10])
 	r.RData = buf[10:int(r.RDLength)]
-	return &r
+	return r
 }
 
 func MessageFromBytes(buf []byte) *Message {
 	m := Message{}
-	m.Header = *HeaderFromBytes(buf)
+	m.Header = HeaderFromBytes(buf)
 	buf = buf[12:]
-	m.Questions = make([]Question, m.Header.QDCount)
+	// m.Questions = make([]Question, m.Header.QDCount)
 	for i := 0; i < int(m.Header.QDCount); i++ {
 		q := QuestionFromBytes(buf)
-		m.Questions = append(m.Questions, *q)
+		m.Questions = append(m.Questions, q)
 		buf = buf[len(q.Bytes()):]
 	}
-	m.Answers = make([]ResourceRecord, m.Header.ANCount)
+	// m.Answers = make([]ResourceRecord, m.Header.ANCount)
 	for i := 0; i < int(m.Header.ANCount); i++ {
 		r := ResourceRecordFromBytes(buf)
-		m.Answers = append(m.Answers, *r)
+		m.Answers = append(m.Answers, r)
 		buf = buf[len(r.Bytes()):]
 	}
 	return &m
