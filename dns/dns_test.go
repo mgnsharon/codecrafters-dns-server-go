@@ -1,42 +1,14 @@
-package main
+package dns
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"testing"
-
-	"github.com/codecrafters-io/dns-server-starter-go/dns"
 )
 
-func TestHandleRequest(t *testing.T) {
-	var req dns.Message = LoadJson(t, "req", "message").(dns.Message)
-	var res dns.Message = LoadJson(t, "res", "message").(dns.Message)
-
-	tcs := []struct {
-		n string
-		data []byte
-		expected  []byte
-	}{
-		{
-			n: "test handleRequest",
-			data: req.Bytes(),
-			expected: res.Bytes(),
-		},
-	}
-
-	for _, tc := range tcs {
-		t.Run(tc.n, func(t *testing.T) {
-			actual := handleRequest(tc.data)
-			if !bytes.Equal(actual, tc.expected){
-				t.Errorf("Expected %v, got %v", string(tc.expected), string(actual))
-			}
-		})
-	}	
-}
-func LoadJson(t *testing.T, fn string, sn string) any {
+func loadJson(t *testing.T, fn string, sn string) any {
 	t.Helper()
 	cdProjectRoot(t)
 	fp := path.Join("dns", "testdata", fmt.Sprintf("%s.json", fn))
@@ -48,15 +20,19 @@ func LoadJson(t *testing.T, fn string, sn string) any {
 
 	switch sn {
 	case "header":
-		var obj dns.Header
+		var obj Header
 		json.Unmarshal(data, &obj)
 		return obj
 	case "resource-record":
-		var obj dns.ResourceRecord
+		var obj ResourceRecord
 		json.Unmarshal(data, &obj)
 		return obj
 	case "message":
-		var obj dns.Message
+		var obj Message
+		json.Unmarshal(data, &obj)
+		return obj
+	case "question":
+		var obj Question
 		json.Unmarshal(data, &obj)
 		return obj
 	default:
@@ -65,6 +41,7 @@ func LoadJson(t *testing.T, fn string, sn string) any {
 	}
 	return nil
 }
+
 func cdProjectRoot(t *testing.T) {
 	t.Helper()
 	d, err := os.Getwd()

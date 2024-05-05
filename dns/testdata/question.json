@@ -1,0 +1,10 @@
+{
+  "name": {
+    "labels": [
+      { "length": 12, "content": "codecrafters" },
+      { "length": 2, "content": "io" }
+    ]
+  },
+  "type": 1,
+  "class": 1
+}
