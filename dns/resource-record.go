@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 )
@@ -28,12 +29,18 @@ func (r *ResourceRecord) Bytes() []byte {
 func ResourceRecordFromBytes(buf []byte, msgBuf []byte) ResourceRecord {
 	r := ResourceRecord{}
 	r.Name = DomainNameFromBytes(buf, msgBuf)
-	buf = buf[len(r.Name.Bytes()):]
+	o := len(r.Name.Bytes())
+	if o > len(buf) {
+		ptr := bytes.IndexByte(buf, 0xC0)
+		buf = buf[ptr + 2:]
+	} else {
+		buf = buf[o:]
+	}
 	r.Type = RecordType(binary.BigEndian.Uint16(buf[:2]))
 	r.Class = RecordClass(binary.BigEndian.Uint16(buf[2:4]))
 	r.TTL = binary.BigEndian.Uint32(buf[4:8])
 	r.RDLength = binary.BigEndian.Uint16(buf[8:10])
-	r.RData = buf[10:int(r.RDLength)]
+	r.RData = buf[10:r.RDLength + 10]
 	return r
 }
 

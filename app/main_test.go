@@ -2,8 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -12,9 +10,7 @@ import (
 )
 
 func TestHandleRequest(t *testing.T) {
-	var req dns.Message = LoadJson(t, "req", "message").(dns.Message)
-	var res dns.Message = LoadJson(t, "res", "message").(dns.Message)
-
+	var res dns.Message
 	tcs := []struct {
 		n string
 		data []byte
@@ -22,49 +18,21 @@ func TestHandleRequest(t *testing.T) {
 	}{
 		{
 			n: "test handleRequest",
-			data: req.Bytes(),
+			data: []byte{142,195,1,0,0,1,0,0,0,0,0,0,12,99,111,100,101,99,114,97,102,116,101,114,115,2,105,111,0,0,1,0,1},
 			expected: res.Bytes(),
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.n, func(t *testing.T) {
-			actual := handleRequest(tc.data)
+			actual := handleRequest(tc.data, "8.8.8.8:53")
 			if !bytes.Equal(actual, tc.expected){
 				t.Errorf("Expected %v, got %v", string(tc.expected), string(actual))
 			}
 		})
 	}	
 }
-func LoadJson(t *testing.T, fn string, sn string) any {
-	t.Helper()
-	cdProjectRoot(t)
-	fp := path.Join("dns", "testdata", fmt.Sprintf("%s.json", fn))
-	fmt.Println("Loading file", fp)
-	data, err := os.ReadFile(fp)
-	if err != nil {
-		t.Fatalf("Could not load file %s", fn)
-	}
 
-	switch sn {
-	case "header":
-		var obj dns.Header
-		json.Unmarshal(data, &obj)
-		return obj
-	case "resource-record":
-		var obj dns.ResourceRecord
-		json.Unmarshal(data, &obj)
-		return obj
-	case "message":
-		var obj dns.Message
-		json.Unmarshal(data, &obj)
-		return obj
-	default:
-		t.Fatalf("Unknown file %s", fn)
-		os.Exit(1)
-	}
-	return nil
-}
 func cdProjectRoot(t *testing.T) {
 	t.Helper()
 	d, err := os.Getwd()

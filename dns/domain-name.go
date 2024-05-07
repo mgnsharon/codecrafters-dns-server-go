@@ -3,13 +3,12 @@ package dns
 import "encoding/binary"
 
 type DomainLabel struct {
-    Length  uint8  `json:"length"`
-    Content string `json:"content"`
-	Offset  uint16 `json:"offset"`
+    Length  uint8
+    Content string
 }
 
 type DomainName struct {
-    Labels []DomainLabel `json:"labels"`
+    Labels []DomainLabel
 }
 
 func (d *DomainLabel) Bytes() []byte {

@@ -1,6 +1,9 @@
 package dns
 
-import "encoding/binary"
+import (
+	"bytes"
+	"encoding/binary"
+)
 
 type Question struct {
     Name  DomainName  `json:"name"`
@@ -21,7 +24,8 @@ func QuestionFromBytes(buf []byte, msgBuf []byte) Question {
 	q.Name = DomainNameFromBytes(buf, msgBuf)
 	o := len(q.Name.Bytes())
 	if o > len(buf) {
-		buf = buf[5:]
+		ptr := bytes.IndexByte(buf, 0xC0)
+		buf = buf[ptr + 2:]
 	} else {
 		buf = buf[o:]
 	}

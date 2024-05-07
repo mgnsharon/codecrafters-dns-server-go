@@ -1,5 +1,7 @@
 package dns
 
+import "bytes"
+
 type RecordType uint16 
 type RecordClass uint16
 
@@ -53,7 +55,8 @@ func MessageFromBytes(buf []byte) *Message {
 		m.Questions = append(m.Questions, q)
 		o := len(q.Bytes())
 		if o > len(qbuf) {
-			qbuf = qbuf[5:]
+			ptr := bytes.IndexByte(qbuf, 0xC0)
+			qbuf = qbuf[ptr + 2:]
 		} else {
 			qbuf = qbuf[o:]
 		}
@@ -61,9 +64,15 @@ func MessageFromBytes(buf []byte) *Message {
 	}
 	
 	for i := 0; i < int(m.Header.ANCount); i++ {
-		r := ResourceRecordFromBytes(buf, buf)
+		r := ResourceRecordFromBytes(qbuf, buf)
 		m.Answers = append(m.Answers, r)
-		buf = buf[len(r.Bytes()):]
+		o := len(r.Bytes())
+		if o > len(qbuf) {
+			ptr := bytes.IndexByte(qbuf, 0xC0)
+			qbuf = qbuf[ptr + 2:]
+		} else {
+			qbuf = qbuf[o:]
+		}
 	}
 	return &m
 }
