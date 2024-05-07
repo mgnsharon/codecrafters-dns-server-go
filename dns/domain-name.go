@@ -1,8 +1,11 @@
 package dns
 
+import "encoding/binary"
+
 type DomainLabel struct {
     Length  uint8  `json:"length"`
     Content string `json:"content"`
+	Offset  uint16 `json:"offset"`
 }
 
 type DomainName struct {
@@ -32,16 +35,33 @@ func DomainLabelFromBytes(buf []byte) DomainLabel {
 	return d
 }
 
-func DomainNameFromBytes(buf []byte) DomainName {
+func parseLabels(buf []byte, msgBuf []byte, labels []DomainLabel) ([]byte, []DomainLabel) {
+	if buf[0] == 0 {
+		return buf, labels
+	}
+	if buf[0] & 0xC0 == 0xC0{
+		offset := binary.BigEndian.Uint16([]byte{buf[0] & 0x3F, buf[1]})
+		return parseLabels(msgBuf[offset:], msgBuf, labels)
+	}
+	d := DomainLabel{}
+	d.Length = buf[0]
+	d.Content = string(buf[1:d.Length + 1])
+	labels = append(labels, d)
+	return parseLabels(buf[d.Length + 1:], msgBuf, labels)
+}
+
+func DomainNameFromBytes(buf []byte, msgBuf []byte) DomainName {
 	d := DomainName{}
-	d.Labels = make([]DomainLabel, 0)
+	//d.Labels = make([]DomainLabel, 0)
+	dnBuf := buf[:]
 	for {
-		if buf[0] == 0 {
+		if dnBuf[0] == 0 {
 			break
 		}
-		label := DomainLabelFromBytes(buf)
-		d.Labels = append(d.Labels, label)
-		buf = buf[label.Length + 1:]
+		b, labels := parseLabels(buf, msgBuf, []DomainLabel{})
+		d.Labels = append(d.Labels, labels...)
+		dnBuf = b[:]
+		
 	}
 	return d
 }

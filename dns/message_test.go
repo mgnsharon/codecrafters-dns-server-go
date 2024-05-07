@@ -5,18 +5,32 @@ import (
 )
 
 func TestMessageFromBytes(t *testing.T) {
-	var req Message = loadJson(t, "req", "message").(Message)
-	var res Message = loadJson(t, "res", "message").(Message)
+	//var req Message = loadJson(t, "req", "message").(Message)
+	//var res Message = loadJson(t, "res", "message").(Message)
 	tcs := []struct {
 		n string
 		message []byte
 		expected  uint16
 	}{
 		{
+			n: "uncompressed msg",
+			// "K%\x01\x00\x00\x02\x00\x00\x00\x00\x00\x00\x03abc\x11longassdomainname\x03com\x00\x00\x01\x00\x01\x03def\xc0\x10\x00\x01\x00\x01"
+
+			message: []byte{75,37,1,0,0,2,0,0,0,0,0,0,3,97,98,99,17,108,111,110,103,97,115,115,100,111,109,97,105,110,110,97,109,101,3,99,111,109,0,0,1,0,1,3,100,101,102,192,16,0,1,0,1},
+			expected: 9533,
+		},
+		/* {
 			n: "test header ID",
 			message: req.Bytes(),
 			expected: res.Header.ID,
 		},
+		{
+			n: "uncompressed msg",
+			// "F\xbd\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\fcodecrafters\x02io\x00\x00\x01\x00\x01"
+			message: []byte{70, 189, 1 ,0,0,1,0,0,0,0,0,0,12,99,111,100,101,99,114,97,102,116,101,114,115,2,105,111,0,0,1,0,1},
+			expected: 1234,
+		}, */
+		
 	}
 
 	for _, tc := range tcs {

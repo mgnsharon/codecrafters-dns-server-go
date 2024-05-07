@@ -16,10 +16,15 @@ func (q *Question) Bytes() []byte {
 	return buf
 }
 
-func QuestionFromBytes(buf []byte) Question {
+func QuestionFromBytes(buf []byte, msgBuf []byte) Question {
 	q := Question{}
-	q.Name = DomainNameFromBytes(buf)
-	buf = buf[len(q.Name.Bytes()):]
+	q.Name = DomainNameFromBytes(buf, msgBuf)
+	o := len(q.Name.Bytes())
+	if o > len(buf) {
+		buf = buf[5:]
+	} else {
+		buf = buf[o:]
+	}
 	q.Type = RecordType(binary.BigEndian.Uint16(buf[:2]))
 	q.Class = RecordClass(binary.BigEndian.Uint16(buf[2:4]))
 	return q

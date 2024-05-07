@@ -25,9 +25,9 @@ func (r *ResourceRecord) Bytes() []byte {
 	return buf
 }
 
-func ResourceRecordFromBytes(buf []byte) ResourceRecord {
+func ResourceRecordFromBytes(buf []byte, msgBuf []byte) ResourceRecord {
 	r := ResourceRecord{}
-	r.Name = DomainNameFromBytes(buf)
+	r.Name = DomainNameFromBytes(buf, msgBuf)
 	buf = buf[len(r.Name.Bytes()):]
 	r.Type = RecordType(binary.BigEndian.Uint16(buf[:2]))
 	r.Class = RecordClass(binary.BigEndian.Uint16(buf[2:4]))

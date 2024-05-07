@@ -58,26 +58,25 @@ func handleRequest(data []byte) []byte {
 	} else {
 		res.Header.RCode = 4
 	}
-	res.Header.QDCount = 1
-	res.Header.ANCount = 1
+	res.Header.QDCount = req.Header.QDCount
+	res.Header.ANCount = req.Header.QDCount
 	res.Header.NSCount = 0
 	res.Header.ARCount = 0
 
-	res.Questions = append(res.Questions, req.Questions[0])
+	//res.Questions = append(res.Questions, req.Questions[0])
+	res.Questions = append(res.Questions, req.Questions...)
 
-	res.Answers = []dns.ResourceRecord{
-		{
-			Name: dns.DomainName{
-				Labels: append([]dns.DomainLabel{}, req.Questions[0].Name.Labels...),
-			},
+	for _, q := range req.Questions {
+		res.Answers = append(res.Answers, dns.ResourceRecord{
+			Name: q.Name,
 			Type: dns.A,
 			Class: dns.IN,
 			TTL: 60,
-			RData: (*dns.IPv4Address)(&dns.IPv4Address{
-					Octets: [4]uint8{8, 8, 8, 8},
-				}).Bytes(),
 			RDLength: 4,
-		},
+			RData: (*dns.IPv4Address)(&dns.IPv4Address{
+				Octets: [4]uint8{8, 8, 8, 8},
+			}).Bytes(),
+		})
 	}
 	res.Authorities = make([]dns.Authority, 0)
 	res.Additionals = make([]dns.Additional, 0)

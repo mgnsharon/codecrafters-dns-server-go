@@ -46,16 +46,22 @@ func (m *Message) Bytes() []byte {
 func MessageFromBytes(buf []byte) *Message {
 	m := Message{}
 	m.Header = HeaderFromBytes(buf)
-	buf = buf[12:]
-	// m.Questions = make([]Question, m.Header.QDCount)
+	qbuf := buf[12:]
+	
 	for i := 0; i < int(m.Header.QDCount); i++ {
-		q := QuestionFromBytes(buf)
+		q := QuestionFromBytes(qbuf, buf)
 		m.Questions = append(m.Questions, q)
-		buf = buf[len(q.Bytes()):]
+		o := len(q.Bytes())
+		if o > len(qbuf) {
+			qbuf = qbuf[5:]
+		} else {
+			qbuf = qbuf[o:]
+		}
+		
 	}
-	// m.Answers = make([]ResourceRecord, m.Header.ANCount)
+	
 	for i := 0; i < int(m.Header.ANCount); i++ {
-		r := ResourceRecordFromBytes(buf)
+		r := ResourceRecordFromBytes(buf, buf)
 		m.Answers = append(m.Answers, r)
 		buf = buf[len(r.Bytes()):]
 	}
